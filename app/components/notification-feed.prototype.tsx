@@ -55,6 +55,7 @@ export const VARIANTS: VariantDef[] = [
   { key: "A", name: "Bell popover" },
   { key: "B", name: "Sidebar inbox drawer" },
   { key: "C", name: "Action rail" },
+  { key: "D", name: "Bell (A) + drawer (B)" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -153,7 +154,12 @@ export function useNotificationFeedPrototype(props: KnockFeedProps | null) {
 
   const ctx = { feed: k.feed, items: k.items, meta: k.meta };
   return {
-    sidebarHeader: variant.key === "A" ? <VariantA {...ctx} /> : null,
+    sidebarHeader:
+      variant.key === "A" ? (
+        <VariantA {...ctx} />
+      ) : variant.key === "D" ? (
+        <VariantD {...ctx} />
+      ) : null,
     sidebarNav: variant.key === "B" ? <VariantB {...ctx} /> : null,
     rightRail: variant.key === "C" ? <VariantC {...ctx} /> : null,
     switcher,
@@ -277,22 +283,6 @@ function VariantA({ feed, items, meta }: Ctx) {
 
 function VariantB({ feed, items, meta }: Ctx) {
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"unread" | "all">("unread");
-  const navigate = useNavigate();
-
-  const shown = tab === "unread" ? items.filter((i) => !i.read_at) : items;
-  const today = new Date().toDateString();
-  const groups = [
-    {
-      label: "Today",
-      items: shown.filter((i) => new Date(i.inserted_at).toDateString() === today),
-    },
-    {
-      label: "Earlier",
-      items: shown.filter((i) => new Date(i.inserted_at).toDateString() !== today),
-    },
-  ].filter((g) => g.items.length > 0);
-
   return (
     <>
       <button
@@ -313,7 +303,31 @@ function VariantB({ feed, items, meta }: Ctx) {
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={() => setOpen(false)}>
+        <InboxDrawer feed={feed} items={items} meta={meta} onClose={() => setOpen(false)} />
+      )}
+    </>
+  );
+}
+
+function InboxDrawer({ feed, items, meta, onClose }: Ctx & { onClose: () => void }) {
+  const [tab, setTab] = useState<"unread" | "all">("unread");
+  const navigate = useNavigate();
+
+  const shown = tab === "unread" ? items.filter((i) => !i.read_at) : items;
+  const today = new Date().toDateString();
+  const groups = [
+    {
+      label: "Today",
+      items: shown.filter((i) => new Date(i.inserted_at).toDateString() === today),
+    },
+    {
+      label: "Earlier",
+      items: shown.filter((i) => new Date(i.inserted_at).toDateString() !== today),
+    },
+  ].filter((g) => g.items.length > 0);
+
+  return (
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={onClose}>
           <aside
             onClick={(e) => e.stopPropagation()}
             className="flex h-full w-[28rem] flex-col bg-background shadow-2xl"
@@ -326,7 +340,7 @@ function VariantB({ feed, items, meta }: Ctx) {
               >
                 <CheckCheck className="size-3.5" /> Mark all read
               </button>
-              <button onClick={() => setOpen(false)} className="rounded-md p-1 hover:bg-accent">
+              <button onClick={onClose} className="rounded-md p-1 hover:bg-accent">
                 <X className="size-4" />
               </button>
             </header>
@@ -367,7 +381,7 @@ function VariantB({ feed, items, meta }: Ctx) {
                         onClick={() => {
                           if (!d.url) return;
                           feed.markAsRead(item);
-                          setOpen(false);
+                          onClose();
                           navigate(d.url);
                         }}
                         className={cn(
@@ -430,8 +444,33 @@ function VariantB({ feed, items, meta }: Ctx) {
             </div>
           </aside>
         </div>
+        );
+}
+
+// ---------------------------------------------------------------------------
+// Variant D: A's bell in the sidebar header opens B's full-height drawer.
+// Badge = UNREAD (B's read model, no separate "seen" state).
+
+function VariantD({ feed, items, meta }: Ctx) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative ml-auto">
+      <button
+        onClick={() => setOpen(true)}
+        className="relative rounded-md p-1.5 text-sidebar-foreground/70 hover:bg-sidebar-accent"
+        title="Notifications"
+      >
+        <Bell className="size-5" />
+        {meta.unread_count > 0 && (
+          <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white">
+            {meta.unread_count > 9 ? "9+" : meta.unread_count}
+          </span>
+        )}
+      </button>
+      {open && (
+        <InboxDrawer feed={feed} items={items} meta={meta} onClose={() => setOpen(false)} />
       )}
-    </>
+    </div>
   );
 }
 
