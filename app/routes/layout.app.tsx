@@ -2,6 +2,11 @@ import { Outlet } from "react-router";
 import type { Route } from "./+types/layout.app";
 import { Sidebar } from "~/components/sidebar";
 import { DevUI } from "~/components/dev-ui";
+import { useNotificationFeedPrototype } from "~/components/notification-feed.prototype";
+import {
+  getKnockFeedConfig,
+  signKnockUserToken,
+} from "~/lib/knock-prototype.server";
 import { Toaster } from "sonner";
 import { getCurrentUserId, getDevCountry } from "~/lib/session";
 import { getCountryTierInfo, COUNTRIES } from "~/lib/ppp";
@@ -198,7 +203,19 @@ export async function loader({ request }: Route.LoaderArgs) {
       })
     : [];
 
+  // PROTOTYPE (wayfinder #14): sign a Knock user token for the DevUI user.
+  const knockConfig = getKnockFeedConfig();
+  const knockFeed =
+    currentUserId && knockConfig
+      ? {
+          ...knockConfig,
+          userId: String(currentUserId),
+          userToken: await signKnockUserToken(currentUserId),
+        }
+      : null;
+
   return {
+    knockFeed,
     users: users.map((u) => ({ id: u.id, name: u.name, role: u.role })),
     currentUser: currentUser
       ? {
@@ -225,7 +242,9 @@ export default function AppLayout({ loaderData }: Route.ComponentProps) {
     countryTierInfo,
     countries,
     isTeamAdmin: userIsTeamAdmin,
+    knockFeed,
   } = loaderData;
+  const feedPrototype = useNotificationFeedPrototype(knockFeed);
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -233,10 +252,14 @@ export default function AppLayout({ loaderData }: Route.ComponentProps) {
         currentUser={currentUser}
         recentCourses={recentCourses}
         isTeamAdmin={userIsTeamAdmin}
+        headerSlot={feedPrototype.sidebarHeader}
+        navSlot={feedPrototype.sidebarNav}
       />
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
+      {feedPrototype.rightRail}
+      {feedPrototype.switcher}
       <DevUI
         users={users}
         currentUser={currentUser}
