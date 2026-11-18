@@ -5,6 +5,10 @@ import { UserRole } from "~/db/schema";
 import { UserAvatar } from "~/components/user-avatar";
 import { NotificationBell } from "~/components/notification-feed";
 import {
+  RecentCourseLink,
+  type RecentCourse,
+} from "~/components/recent-course-link";
+import {
   Bookmark,
   BookOpen,
   ChartColumn,
@@ -27,16 +31,6 @@ type CurrentUser = {
   name: string;
   role: UserRole;
   avatarUrl: string | null;
-};
-
-type RecentCourse = {
-  courseId: number;
-  title: string;
-  slug: string;
-  coverImageUrl: string | null;
-  completedLessons: number;
-  totalLessons: number;
-  progress: number;
 };
 
 type SidebarProps = {
@@ -196,33 +190,7 @@ export function Sidebar({
           </div>
           <div className="space-y-1">
             {recentCourses.map((course) => (
-              <NavLink
-                key={course.courseId}
-                to={`/courses/${course.slug}`}
-                className={({ isActive }) =>
-                  cn(
-                    "block rounded-md px-3 py-2 transition-colors",
-                    isActive
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  )
-                }
-              >
-                <div className="truncate text-sm font-medium">
-                  {course.title}
-                </div>
-                <div className="mt-1 flex items-center gap-2">
-                  <div className="h-1.5 flex-1 rounded-full bg-sidebar-accent">
-                    <div
-                      className="h-1.5 rounded-full bg-primary"
-                      style={{ width: `${course.progress}%` }}
-                    />
-                  </div>
-                  <span className="shrink-0 text-xs text-sidebar-foreground/50">
-                    {course.progress}%
-                  </span>
-                </div>
-              </NavLink>
+              <RecentCourseLink key={course.courseId} course={course} />
             ))}
           </div>
         </div>
