@@ -27,6 +27,7 @@ import { formatDuration } from "~/lib/utils";
 import { YouTubePlayer } from "~/components/youtube-player";
 
 type QuizProps = ComponentProps<typeof QuizSection>;
+type CurriculumProps = ComponentProps<typeof CurriculumSidebar>;
 
 export type FullLessonData = Omit<
   LockedLessonData,
@@ -42,7 +43,7 @@ export type FullLessonData = Omit<
   bestAttempt: QuizProps["bestAttempt"];
   lastWatchPosition: number;
   watchProgress: number;
-  lessonProgressMap: Record<number, string>;
+  lessonProgressMap: CurriculumProps["lessonProgressMap"];
   comments: RenderedComment[];
   canModerate: boolean;
   instructorName: string;
