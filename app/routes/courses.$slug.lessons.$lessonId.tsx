@@ -48,6 +48,7 @@ import { LockedLesson } from "~/components/lesson-locked";
 import { FullLesson } from "~/components/lesson-full";
 import { Link, data, isRouteErrorResponse } from "react-router";
 import { db } from "~/db";
+import type { LessonProgressStatus } from "~/db/schema";
 import { Button } from "~/components/ui/button";
 import { AlertTriangle } from "lucide-react";
 
@@ -160,7 +161,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     };
   }
 
-  let lessonStatus: string | null = null;
+  let lessonStatus: LessonProgressStatus | null = null;
   let lastWatchPosition = 0;
   let watchProgress = 0;
   const lessonProgressMap: Record<number, string> = {};

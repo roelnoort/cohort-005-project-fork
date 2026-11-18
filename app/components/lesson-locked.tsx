@@ -1,17 +1,27 @@
 import { CurriculumSidebar } from "~/components/lesson-curriculum-sidebar";
-import type { Route } from "../routes/+types/courses.$slug.lessons.$lessonId";
+import type { ComponentProps } from "react";
+import type { DenialReason } from "~/modules/permissions/course-permissions.server";
 import { Link } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import { MapPin, ShieldAlert } from "lucide-react";
 import { countryName } from "~/lib/ppp";
 
-type LessonLoaderData = Route.ComponentProps["loaderData"];
+type SidebarProps = ComponentProps<typeof CurriculumSidebar>;
+
+export type LockedLessonData = {
+  course: SidebarProps["course"];
+  curriculum: SidebarProps["curriculum"];
+  module: { id: number; title: string };
+  lesson: { id: number; title: string };
+  enrolled: boolean;
+  lockedReason: DenialReason;
+};
 
 export function LockedLesson({
   data: { course, curriculum, module: mod, lesson, enrolled, lockedReason },
 }: {
-  data: Extract<LessonLoaderData, { view: "locked" }>;
+  data: LockedLessonData;
 }) {
   const purchasePath = `/courses/${course.slug}/purchase`;
 

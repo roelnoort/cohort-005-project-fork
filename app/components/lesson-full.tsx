@@ -1,12 +1,15 @@
-import type { Route } from "../routes/+types/courses.$slug.lessons.$lessonId";
-import { LessonBreadcrumb } from "~/components/lesson-locked";
+import type { ComponentProps } from "react";
+import {
+  LessonBreadcrumb,
+  type LockedLessonData,
+} from "~/components/lesson-locked";
 import { CurriculumSidebar } from "~/components/lesson-curriculum-sidebar";
 import { QuizSection } from "~/components/lesson-quiz-section";
 import { useState, useEffect, useCallback } from "react";
 import { Link, useFetcher, useNavigate } from "react-router";
 import { CommentThread } from "~/components/comment-thread";
-import { LessonNote } from "~/components/lesson-note";
-import { LessonProgressStatus } from "~/db/schema";
+import { LessonNote, type LessonNoteData } from "~/components/lesson-note";
+import { LessonProgressStatus, type lessons } from "~/db/schema";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import {
@@ -21,7 +24,31 @@ import {
 import { formatDuration } from "~/lib/utils";
 import { YouTubePlayer } from "~/components/youtube-player";
 
-type LessonLoaderData = Route.ComponentProps["loaderData"];
+type SidebarProps = ComponentProps<typeof CurriculumSidebar>;
+type QuizProps = ComponentProps<typeof QuizSection>;
+type NeighbourLesson = { id: number; title: string };
+
+export type FullLessonData = Omit<
+  LockedLessonData,
+  "lesson" | "lockedReason"
+> & {
+  lesson: typeof lessons.$inferSelect;
+  contentHtml: string | null;
+  lessonStatus: LessonProgressStatus | null;
+  currentUserId: number | null;
+  prevLesson: NeighbourLesson | null;
+  nextLesson: NeighbourLesson | null;
+  quiz: QuizProps["quiz"] | null;
+  bestAttempt: QuizProps["bestAttempt"];
+  lastWatchPosition: number;
+  watchProgress: number;
+  lessonProgressMap: SidebarProps["lessonProgressMap"];
+  comments: ComponentProps<typeof CommentThread>["comments"];
+  canModerate: boolean;
+  instructorName: string;
+  bookmarked: boolean;
+  note: LessonNoteData;
+};
 
 const AUTOPLAY_KEY = "cadence-autoplay";
 
@@ -51,11 +78,7 @@ function useAutoplay() {
   return [enabled, toggle] as const;
 }
 
-export function FullLesson({
-  data,
-}: {
-  data: Extract<LessonLoaderData, { view: "full" }>;
-}) {
+export function FullLesson({ data }: { data: FullLessonData }) {
   const {
     course,
     curriculum,
