@@ -4,7 +4,10 @@ import { cn } from "~/lib/utils";
 import { UserRole } from "~/db/schema";
 import { UserAvatar } from "~/components/user-avatar";
 import { NotificationBell } from "~/components/notification-feed";
-import { RecentCourseLink } from "~/components/recent-course-link";
+import {
+  RecentCourseLink,
+  type RecentCourse,
+} from "~/components/recent-course-link";
 import {
   Bookmark,
   BookOpen,
@@ -28,16 +31,6 @@ type CurrentUser = {
   name: string;
   role: UserRole;
   avatarUrl: string | null;
-};
-
-type RecentCourse = {
-  courseId: number;
-  title: string;
-  slug: string;
-  coverImageUrl: string | null;
-  completedLessons: number;
-  totalLessons: number;
-  progress: number;
 };
 
 type SidebarProps = {
