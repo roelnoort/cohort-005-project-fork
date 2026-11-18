@@ -20,6 +20,18 @@ a type and you do not check it again. Coerce numbers through the schema, not
 `Number()`: `Number("")` is `0`, and an empty `lessonId` once opened lesson 0
 for every learner.
 
+A check in the browser (a counter, a disabled Save button) uses the same
+schema the action parses with, not its own copy of the rules. The note editor
+compared the untrimmed draft while the server trimmed it, so a saved note
+showed "Unsaved changes" forever.
+
+## Key per-entity form state on the entity's id
+
+A component that holds form state for one entity gets `key={entity.id}`.
+Without it, React keeps the component when the route moves to the next
+entity, and the old draft goes with it: a note written on lesson A could be
+saved on lesson B.
+
 ## Check permission in the action, not only the loader
 
 A loader guard does not protect an action. They are separate requests. For a
@@ -42,9 +54,12 @@ Test setup calls the module's own functions. When the function you need does
 not exist, add it to the module rather than inserting rows directly, so a
 change to how the module stores its data leaves its tests alone.
 
-## Keep files under 5000 tokens
+## A split the token check forced is part of the change
 
-Keep every file under 5000 tokens.
+The pre-commit hook rejects any file over 5000 tokens, so a change that
+touches a large file has to split it first. That split is in scope, whatever
+the ticket asked for. Review it for quality, not for scope: it arrives as its
+own commit before the change, with the code moved verbatim.
 
 ## Wrap related writes in a transaction
 

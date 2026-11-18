@@ -71,7 +71,9 @@ module.exports = {
         "No dependency cycles. Scope to `^${R}/` if you want to allow cycles outside packages.",
       severity: "error",
       from: {},
-      to: { circular: true },
+      // A cycle made only of runtime imports. A type-only import is erased at
+      // build time, so it cannot cause a load-order bug.
+      to: { circular: true, viaOnly: { dependencyTypesNot: ["type-only"] } },
     },
 
     // --- Layering (optional, off by default) ----------------------------------
@@ -104,8 +106,21 @@ module.exports = {
         path: ["^app/db/index\\.ts$", "^node_modules/better-sqlite3/"],
       },
     },
+    {
+      name: "components-not-to-routes",
+      comment:
+        "Shared components do not depend on a route, not even on its generated `+types`. Declare the props the component needs as its own type, or keep the component next to the route that uses it.",
+      severity: "error",
+      from: { path: "^app/components/" },
+      // A `+types` import does not resolve (it lives in .react-router/types,
+      // reached through tsconfig `rootDirs`), so match it by its specifier.
+      to: { path: ["^app/routes/", "(^|/)routes/\\+types/"] },
+    },
   ],
   options: {
+    // Keep type-only imports in the graph, so the rules above see an
+    // `import type` from a route's `+types` too.
+    tsPreCompilationDeps: true,
     doNotFollow: { path: "node_modules" },
     tsConfig: { fileName: "tsconfig.json" },
     enhancedResolveOptions: {
