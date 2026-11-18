@@ -46,4 +46,20 @@ describe("noteDraftStatus", () => {
     expect(status.tooLong).toBe(true);
     expect(status.canSave).toBe(false);
   });
+
+  it("treats surrounding whitespace as saved, because the server trims it", () => {
+    const status = noteDraftStatus(
+      "Cursor beats offset \n",
+      "Cursor beats offset"
+    );
+    expect(status.unsaved).toBe(false);
+    expect(status.canSave).toBe(false);
+  });
+
+  it("counts the length the server will store, without surrounding whitespace", () => {
+    const status = noteDraftStatus(`  ${"a".repeat(MAX_NOTE_LENGTH)}\n`, null);
+    expect(status.length).toBe(MAX_NOTE_LENGTH);
+    expect(status.tooLong).toBe(false);
+    expect(status.canSave).toBe(true);
+  });
 });

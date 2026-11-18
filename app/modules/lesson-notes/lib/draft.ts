@@ -12,10 +12,12 @@ export function describeDraft(
   savedBody: string | null,
   limit: number
 ): NoteDraftStatus {
-  const length = draft.length;
+  // The action trims before saving, so compare and count what it will store.
+  const stored = draft.trim();
+  const length = stored.length;
   const tooLong = length > limit;
-  const empty = draft.trim().length === 0;
-  const unsaved = draft !== (savedBody ?? "");
+  const empty = length === 0;
+  const unsaved = stored !== (savedBody ?? "");
   return {
     length,
     limit,
