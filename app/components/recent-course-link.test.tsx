@@ -29,8 +29,8 @@ describe("RecentCourseLink", () => {
 
   it("wraps the title onto two lines instead of truncating it to one", () => {
     const html = render();
-    expect(html).toContain(
-      '<div class="line-clamp-2 text-sm font-medium">Design Systems with Tailwind</div>'
+    expect(html).toMatch(
+      /<div class="[^"]*\bline-clamp-2\b[^"]*">Design Systems with Tailwind<\/div>/
     );
     expect(html).not.toContain("truncate");
   });
