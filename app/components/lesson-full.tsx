@@ -35,7 +35,7 @@ export type FullLessonData = Omit<
 > & {
   lesson: typeof lessons.$inferSelect;
   contentHtml: string | null;
-  lessonStatus: string | null;
+  lessonStatus: LessonProgressStatus | null;
   currentUserId: number | null;
   prevLesson: FlatLesson | null;
   nextLesson: FlatLesson | null;
