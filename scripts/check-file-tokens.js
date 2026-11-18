@@ -39,11 +39,20 @@ Split each file before you commit. Do not delete code or squash it onto fewer
 lines to get under the limit.
 
 How to split:
+- Commit the split on its own, before your change: move the code verbatim,
+  then make your change in the next commit. The split belongs in this PR.
 - Find the seams. Look for groups of functions, components, or tests that
   change together and share little with the rest of the file.
 - Route modules (app/routes/*): keep the loader, action, and page component in
   the route file. Move the business logic into a module in app/modules/ and
   sub-components into their own files in app/components/.
+- A new module copies app/modules/example/: small entry points at its root,
+  the code in lib/, and tests in tests/ that call the entry points. Code that
+  had no tests gets them now. \`npm run lint:modules\` checks the layout.
+- A moved component declares its own props type. It does not import the
+  route's \`+types\`.
+- A moved file does not take the old file's place on an exemption list in
+  .oxlintrc.json. Split its long functions until it passes.
 - Logic that is already in a module (app/modules/<name>/): split it into more
   files under lib/. Keep the entry points (index.ts, index.server.ts) small. Do
   not add a barrel file. See app/modules/README.md.
