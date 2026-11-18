@@ -1,4 +1,9 @@
-import type { Route } from "../routes/+types/courses.$slug.lessons.$lessonId";
+import type { ComponentProps } from "react";
+import type { LockedLessonData } from "~/components/lesson-locked";
+import type { FlatLesson } from "~/modules/lesson-viewer/course.server";
+import type { RenderedComment } from "~/components/comment-thread";
+import type { LessonNoteData } from "~/components/lesson-note";
+import type { lessons } from "~/db/schema";
 import { LessonBreadcrumb } from "~/components/lesson-locked";
 import { CurriculumSidebar } from "~/components/lesson-curriculum-sidebar";
 import { QuizSection } from "~/components/lesson-quiz-section";
@@ -21,7 +26,29 @@ import {
 import { formatDuration } from "~/lib/utils";
 import { YouTubePlayer } from "~/components/youtube-player";
 
-type LessonLoaderData = Route.ComponentProps["loaderData"];
+type QuizProps = ComponentProps<typeof QuizSection>;
+
+export type FullLessonData = Omit<
+  LockedLessonData,
+  "lesson" | "lockedReason"
+> & {
+  lesson: typeof lessons.$inferSelect;
+  contentHtml: string | null;
+  lessonStatus: string | null;
+  currentUserId: number | null;
+  prevLesson: FlatLesson | null;
+  nextLesson: FlatLesson | null;
+  quiz: QuizProps["quiz"] | null;
+  bestAttempt: QuizProps["bestAttempt"];
+  lastWatchPosition: number;
+  watchProgress: number;
+  lessonProgressMap: Record<number, string>;
+  comments: RenderedComment[];
+  canModerate: boolean;
+  instructorName: string;
+  bookmarked: boolean;
+  note: LessonNoteData;
+};
 
 const AUTOPLAY_KEY = "cadence-autoplay";
 
@@ -51,11 +78,7 @@ function useAutoplay() {
   return [enabled, toggle] as const;
 }
 
-export function FullLesson({
-  data,
-}: {
-  data: Extract<LessonLoaderData, { view: "full" }>;
-}) {
+export function FullLesson({ data }: { data: FullLessonData }) {
   const {
     course,
     curriculum,
