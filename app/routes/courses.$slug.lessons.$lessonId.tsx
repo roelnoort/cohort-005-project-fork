@@ -17,35 +17,13 @@ import { MAX_NOTE_LENGTH } from "~/lib/notes";
 import { renderMarkdown } from "~/lib/markdown.server";
 import { z } from "zod";
 import { parseFormData } from "~/lib/validation";
-import {
-  getCourseWithDetails,
-  getLessonById,
-  getModuleById,
-  getUserById,
-  flattenCourseLessons,
-} from "~/modules/lesson-viewer/course.server";
-import {
-  getLessonProgress,
-  getLessonProgressForCourse,
-  markLessonComplete,
-  markLessonInProgress,
-  getLastWatchPosition,
-  calculateWatchProgress,
-} from "~/modules/lesson-viewer/progress.server";
-import {
-  getCommentById,
-  getLessonThread,
-  renderThread,
-} from "~/modules/lesson-viewer/comments.server";
-import {
-  getQuizByLessonId,
-  getQuizWithQuestions,
-  getBestAttempt,
-  computeResult,
-  getQuizById,
-} from "~/modules/lesson-viewer/quiz.server";
+import { lessonViewer } from "~/modules/lesson-viewer/index.server";
 import { LockedLesson } from "~/components/lesson-locked";
 import { FullLesson } from "~/components/lesson-full";
+import type {
+  FullLessonData,
+  LockedLessonData,
+} from "~/components/lesson-view-data";
 import { Link, data, isRouteErrorResponse } from "react-router";
 import { db } from "~/db";
 import { Button } from "~/components/ui/button";
@@ -123,9 +101,9 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   const currentUserId = person?.id ?? null;
   const lessonId = Number(params.lessonId);
 
-  const courseWithDetails = getCourseWithDetails(course.id);
-  const lesson = getLessonById(lessonId);
-  const mod = lesson ? getModuleById(lesson.moduleId) : undefined;
+  const courseWithDetails = lessonViewer.getCourseWithDetails(course.id);
+  const lesson = lessonViewer.getLessonById(lessonId);
+  const mod = lesson ? lessonViewer.getModuleById(lesson.moduleId) : undefined;
   if (!courseWithDetails || !lesson || !mod) {
     throw data("Lesson not found", { status: 404 });
   }
@@ -157,7 +135,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
       lesson: { id: lesson.id, title: lesson.title },
       enrolled,
       lockedReason,
-    };
+    } satisfies LockedLessonData;
   }
 
   let lessonStatus: string | null = null;
@@ -170,12 +148,12 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     // Student under a Country Lock gets none.
     if (take.allowed) {
       // Mark lesson as in-progress when viewed
-      markLessonInProgress(currentUserId, lessonId);
-      const progress = getLessonProgress(currentUserId, lessonId);
+      lessonViewer.markLessonInProgress(currentUserId, lessonId);
+      const progress = lessonViewer.getLessonProgress(currentUserId, lessonId);
       lessonStatus = progress?.status ?? null;
 
       // Get progress for all lessons in course (for curriculum sidebar)
-      const progressRecords = getLessonProgressForCourse(
+      const progressRecords = lessonViewer.getLessonProgressForCourse(
         currentUserId,
         course.id
       );
@@ -185,10 +163,13 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
       // Get video watch state for resume and progress display
       if (lesson.videoUrl) {
-        lastWatchPosition = getLastWatchPosition(currentUserId, lessonId);
+        lastWatchPosition = lessonViewer.getLastWatchPosition(
+          currentUserId,
+          lessonId
+        );
         const videoDurationSeconds = (lesson.durationMinutes ?? 0) * 60;
         if (videoDurationSeconds > 0) {
-          watchProgress = calculateWatchProgress(
+          watchProgress = lessonViewer.calculateWatchProgress(
             currentUserId,
             lessonId,
             videoDurationSeconds
@@ -200,8 +181,10 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
   // Everything from here on is behind the can-view-content bar above:
   // comments, Bookmarks and Notes are confidential to the course.
-  const instructor = getUserById(course.instructorId);
-  const comments = await renderThread(getLessonThread(lessonId));
+  const instructor = lessonViewer.getUserById(course.instructorId);
+  const comments = await lessonViewer.renderThread(
+    lessonViewer.getLessonThread(lessonId)
+  );
 
   const bookmarked = currentUserId
     ? isBookmarked(db, currentUserId, lessonId)
@@ -214,14 +197,14 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     : null;
 
   // Build prev/next navigation
-  const allLessons = flattenCourseLessons(courseWithDetails);
+  const allLessons = lessonViewer.flattenCourseLessons(courseWithDetails);
   const currentIndex = allLessons.findIndex((l) => l.id === lessonId);
   const prevLesson = currentIndex > 0 ? allLessons[currentIndex - 1] : null;
   const nextLesson =
     currentIndex < allLessons.length - 1 ? allLessons[currentIndex + 1] : null;
 
   // Check for quiz attached to this lesson
-  const quizRecord = getQuizByLessonId(lessonId);
+  const quizRecord = lessonViewer.getQuizByLessonId(lessonId);
   let quiz: {
     id: number;
     title: string;
@@ -237,7 +220,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   let bestAttempt: { score: number; passed: boolean } | null = null;
 
   if (quizRecord) {
-    const quizData = getQuizWithQuestions(quizRecord.id);
+    const quizData = lessonViewer.getQuizWithQuestions(quizRecord.id);
     if (quizData) {
       // Strip isCorrect from options so answers aren't leaked to the client
       quiz = {
@@ -258,7 +241,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     }
 
     if (currentUserId) {
-      const best = getBestAttempt(currentUserId, quizRecord.id);
+      const best = lessonViewer.getBestAttempt(currentUserId, quizRecord.id);
       if (best) {
         bestAttempt = { score: best.score, passed: best.passed };
       }
@@ -294,7 +277,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     instructorName: instructor?.name ?? "your instructor",
     bookmarked,
     note: note ? { body: note.body, updatedAt: note.updatedAt } : null,
-  };
+  } satisfies FullLessonData;
 }
 
 export async function action({ params, request }: Route.ActionArgs) {
@@ -349,7 +332,7 @@ export async function action({ params, request }: Route.ActionArgs) {
         }
         // Scope the id to this lesson so a comment elsewhere can't be reached
         // by posting its id to this route.
-        const existing = getCommentById(parsed.data.commentId);
+        const existing = lessonViewer.getCommentById(parsed.data.commentId);
         if (!existing || existing.lessonId !== lessonId) {
           throw data("Comment not found", { status: 404 });
         }
@@ -368,7 +351,7 @@ export async function action({ params, request }: Route.ActionArgs) {
       if (!parsed.success) {
         return { ok: false, error: "Could not delete that comment." };
       }
-      const existing = getCommentById(parsed.data.commentId);
+      const existing = lessonViewer.getCommentById(parsed.data.commentId);
       if (!existing || existing.lessonId !== lessonId) {
         throw data("Comment not found", { status: 404 });
       }
@@ -423,7 +406,7 @@ export async function action({ params, request }: Route.ActionArgs) {
   }
 
   if (intent === "mark-complete") {
-    markLessonComplete(currentUserId, lessonId);
+    lessonViewer.markLessonComplete(currentUserId, lessonId);
     return { success: true };
   }
 
@@ -434,7 +417,7 @@ export async function action({ params, request }: Route.ActionArgs) {
     }
     // Scope the quiz to this lesson so a quiz elsewhere can't be reached by
     // posting its id to this route.
-    const quiz = getQuizById(quizId);
+    const quiz = lessonViewer.getQuizById(quizId);
     if (!quiz || quiz.lessonId !== lessonId) {
       throw data("Quiz not found", { status: 404 });
     }
@@ -451,7 +434,11 @@ export async function action({ params, request }: Route.ActionArgs) {
       }
     }
 
-    const result = computeResult(currentUserId, quizId, selectedAnswers);
+    const result = lessonViewer.computeResult(
+      currentUserId,
+      quizId,
+      selectedAnswers
+    );
     if (!result) {
       throw data("Failed to score quiz", { status: 500 });
     }
