@@ -114,8 +114,15 @@ on:
   #        there is. Do not stand in front of a camera waiting for :00.
   #      • GitHub disables scheduled workflows in a repository with no commits
   #        for sixty days, and emails the owner. A quiet repo stops on its own.
-  schedule:
-    - cron: "*/15 * * * *"
+  #
+  #    DISABLED FOR NOW: the cron fired every ~15 minutes even with no spec
+  #    labelled, filling the Actions tab with no-op runs. The queue now starts
+  #    only from the label or the button (and the chain re-dispatches itself).
+  #    The trade-off: if a run fails mid-queue, nothing picks it up again
+  #    until you dispatch it by hand. To restore the clock, uncomment the two
+  #    lines below.
+  # schedule:
+  #   - cron: "*/15 * * * *"
 
   # 3. The button, and the chain. `workflow_dispatch` is how a human starts it
   #    without labelling anything — and it is how the `chain` job at the bottom
