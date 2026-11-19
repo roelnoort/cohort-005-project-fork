@@ -99,6 +99,15 @@ function answer(
   );
 }
 
+/** The test user submits these answers to the quiz. */
+function submit(quizId: number, selectedAnswers: Record<number, number>) {
+  return viewer.computeResult({
+    userId: base.user.id,
+    quizId,
+    selectedAnswers,
+  });
+}
+
 function quizOnNewLesson(
   questionCount: number,
   questionType = schema.QuestionType.MultipleChoice
@@ -201,9 +210,12 @@ describe("video watch state", () => {
     watch(lesson.id, 30, "2026-01-02T00:00:00Z");
 
     expect(viewer.getLastWatchPosition(base.user.id, lesson.id)).toBe(30);
-    expect(viewer.calculateWatchProgress(base.user.id, lesson.id, 120)).toBe(
-      75
-    );
+    expect(
+      viewer.calculateWatchProgress(
+        { userId: base.user.id, lessonId: lesson.id },
+        120
+      )
+    ).toBe(75);
   });
 
   it("caps progress at 100 and starts unwatched lessons at 0", () => {
@@ -212,9 +224,12 @@ describe("video watch state", () => {
     expect(viewer.getLastWatchPosition(base.user.id, lesson.id)).toBe(0);
 
     watch(lesson.id, 500, "2026-01-01T00:00:00Z");
-    expect(viewer.calculateWatchProgress(base.user.id, lesson.id, 120)).toBe(
-      100
-    );
+    expect(
+      viewer.calculateWatchProgress(
+        { userId: base.user.id, lessonId: lesson.id },
+        120
+      )
+    ).toBe(100);
   });
 });
 
@@ -258,7 +273,7 @@ describe("computeResult", () => {
       questions.map((q) => [q.questionId, q.right])
     );
 
-    const result = viewer.computeResult(base.user.id, quiz.id, answers);
+    const result = submit(quiz.id, answers);
 
     expect(result).toMatchObject({
       score: 1,
@@ -276,7 +291,7 @@ describe("computeResult", () => {
     const lesson = addLesson(addModule("M", 1).id, "L", 1);
     const { quiz, questions } = addQuiz(lesson.id, 3);
 
-    const result = viewer.computeResult(base.user.id, quiz.id, {
+    const result = submit(quiz.id, {
       [questions[0].questionId]: questions[0].right,
       [questions[1].questionId]: questions[1].wrong,
     });
@@ -294,7 +309,7 @@ describe("computeResult", () => {
   });
 
   it("is null for a quiz that does not exist", () => {
-    expect(viewer.computeResult(base.user.id, 9999, {})).toBeNull();
+    expect(submit(9999, {})).toBeNull();
   });
 });
 
@@ -322,11 +337,7 @@ describe("quiz grading", () => {
   ])("%i of 10 right is grade %s, passed %s", (right, grade, passed) => {
     const { quiz, questions } = quizOnNewLesson(10);
 
-    const result = viewer.computeResult(
-      base.user.id,
-      quiz.id,
-      answer(questions, right)
-    );
+    const result = submit(quiz.id, answer(questions, right));
 
     expect(result).toMatchObject({ score: right / 10, grade, passed });
   });
@@ -334,7 +345,7 @@ describe("quiz grading", () => {
   it("scores a quiz with no questions as 0", () => {
     const { quiz } = quizOnNewLesson(0);
 
-    expect(viewer.computeResult(base.user.id, quiz.id, {})).toMatchObject({
+    expect(submit(quiz.id, {})).toMatchObject({
       score: 0,
       totalQuestions: 0,
     });
@@ -346,11 +357,7 @@ describe("quiz grading", () => {
       schema.QuestionType.TrueFalse
     );
 
-    const result = viewer.computeResult(
-      base.user.id,
-      quiz.id,
-      answer(questions, 1)
-    );
+    const result = submit(quiz.id, answer(questions, 1));
 
     expect(result?.questionResults).toEqual([
       {
@@ -386,7 +393,7 @@ describe("quiz grading", () => {
       .returning()
       .get();
 
-    const result = viewer.computeResult(base.user.id, quiz.id, {
+    const result = submit(quiz.id, {
       [question.id]: option.id,
     });
 
@@ -399,7 +406,7 @@ describe("quiz grading", () => {
   it("records an answer only for the questions that were answered", () => {
     const { quiz, questions } = quizOnNewLesson(2);
 
-    const result = viewer.computeResult(base.user.id, quiz.id, {
+    const result = submit(quiz.id, {
       [questions[0].questionId]: questions[0].right,
     });
 

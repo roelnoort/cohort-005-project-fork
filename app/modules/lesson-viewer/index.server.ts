@@ -7,7 +7,8 @@ import * as quiz from "./lib/quiz";
 
 export type { FlatLesson } from "./lib/course";
 export type { ThreadComment } from "./lib/comments";
-export type { QuestionResult } from "./lib/quiz";
+export type { Viewing } from "./lib/progress";
+export type { QuestionResult, Submission } from "./lib/quiz";
 
 /**
  * The reads and writes behind the lesson page, bound to a database. The app
@@ -39,15 +40,10 @@ export function createLessonViewer(database: Db) {
       progress.getLastWatchPosition(database, userId, lessonId),
     /** The furthest position watched, as a percentage capped at 100. */
     calculateWatchProgress: (
-      userId: number,
-      lessonId: number,
+      viewing: progress.Viewing,
       videoDurationSeconds: number
     ) =>
-      progress.calculateWatchProgress(
-        database,
-        { userId, lessonId },
-        videoDurationSeconds
-      ),
+      progress.calculateWatchProgress(database, viewing, videoDurationSeconds),
 
     // The lesson's discussion
     getCommentById: (commentId: number) =>
@@ -66,11 +62,8 @@ export function createLessonViewer(database: Db) {
     getBestAttempt: (userId: number, quizId: number) =>
       quiz.getBestAttempt(database, userId, quizId),
     /** Grades the answers and records the attempt. Null if the quiz is gone. */
-    computeResult: (
-      userId: number,
-      quizId: number,
-      selectedAnswers: Record<number, number>
-    ) => quiz.computeResult(database, { userId, quizId, selectedAnswers }),
+    computeResult: (submission: quiz.Submission) =>
+      quiz.computeResult(database, submission),
   };
 }
 

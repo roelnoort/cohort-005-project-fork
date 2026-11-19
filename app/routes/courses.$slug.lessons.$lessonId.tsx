@@ -22,8 +22,10 @@ import { LockedLesson } from "~/components/lesson-locked";
 import { FullLesson } from "~/components/lesson-full";
 import type {
   FullLessonData,
+  LessonQuiz,
   LockedLessonData,
 } from "~/components/lesson-view-data";
+import type { LessonProgressStatus } from "~/db/schema";
 import { Link, data, isRouteErrorResponse } from "react-router";
 import { db } from "~/db";
 import { Button } from "~/components/ui/button";
@@ -138,10 +140,10 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     } satisfies LockedLessonData;
   }
 
-  let lessonStatus: string | null = null;
+  let lessonStatus: LessonProgressStatus | null = null;
   let lastWatchPosition = 0;
   let watchProgress = 0;
-  const lessonProgressMap: Record<number, string> = {};
+  const lessonProgressMap: Record<number, LessonProgressStatus> = {};
 
   if (currentUserId) {
     // Progress is recorded only for people who can take the course, so a
@@ -170,8 +172,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
         const videoDurationSeconds = (lesson.durationMinutes ?? 0) * 60;
         if (videoDurationSeconds > 0) {
           watchProgress = lessonViewer.calculateWatchProgress(
-            currentUserId,
-            lessonId,
+            { userId: currentUserId, lessonId },
             videoDurationSeconds
           );
         }
@@ -205,18 +206,7 @@ export async function loader({ params, request }: Route.LoaderArgs) {
 
   // Check for quiz attached to this lesson
   const quizRecord = lessonViewer.getQuizByLessonId(lessonId);
-  let quiz: {
-    id: number;
-    title: string;
-    passingScore: number;
-    questions: Array<{
-      id: number;
-      questionText: string;
-      questionType: string;
-      position: number;
-      options: Array<{ id: number; optionText: string }>;
-    }>;
-  } | null = null;
+  let quiz: LessonQuiz | null = null;
   let bestAttempt: { score: number; passed: boolean } | null = null;
 
   if (quizRecord) {
@@ -434,11 +424,11 @@ export async function action({ params, request }: Route.ActionArgs) {
       }
     }
 
-    const result = lessonViewer.computeResult(
-      currentUserId,
+    const result = lessonViewer.computeResult({
+      userId: currentUserId,
       quizId,
-      selectedAnswers
-    );
+      selectedAnswers,
+    });
     if (!result) {
       throw data("Failed to score quiz", { status: 500 });
     }

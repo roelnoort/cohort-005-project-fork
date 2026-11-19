@@ -5,6 +5,7 @@ import {
   quizOptions,
   quizAttempts,
   quizAnswers,
+  QuestionType,
 } from "~/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 
@@ -72,7 +73,7 @@ export type Submission = {
 type Question = typeof quizQuestions.$inferSelect;
 
 function findCorrectOptionId(db: Db, question: Question): number | null {
-  if (question.questionType === "multiple_choice") {
+  if (question.questionType === QuestionType.MultipleChoice) {
     const opts = db
       .select()
       .from(quizOptions)
@@ -81,7 +82,7 @@ function findCorrectOptionId(db: Db, question: Question): number | null {
     const correctOpt = opts.find((o) => o.isCorrect === true);
     return correctOpt ? correctOpt.id : null;
   }
-  if (question.questionType === "true_false") {
+  if (question.questionType === QuestionType.TrueFalse) {
     const correctOpt = db
       .select()
       .from(quizOptions)

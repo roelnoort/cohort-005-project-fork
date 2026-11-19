@@ -1,5 +1,5 @@
 import type { RenderedComment } from "~/components/comment-thread";
-import type { lessons } from "~/db/schema";
+import type { LessonProgressStatus, lessons, QuestionType } from "~/db/schema";
 import type { DenialReason } from "~/modules/permissions/course-permissions.server";
 
 // The data the lesson page components render. The lesson route's loader
@@ -28,7 +28,7 @@ export type LessonQuiz = {
   questions: Array<{
     id: number;
     questionText: string;
-    questionType: string;
+    questionType: QuestionType;
     position: number;
     options: Array<{ id: number; optionText: string }>;
   }>;
@@ -51,7 +51,7 @@ export type FullLessonData = {
   module: { id: number; title: string };
   lesson: typeof lessons.$inferSelect;
   contentHtml: string | null;
-  lessonStatus: string | null;
+  lessonStatus: LessonProgressStatus | null;
   enrolled: boolean;
   currentUserId: number | null;
   prevLesson: NeighbourLesson | null;
@@ -60,7 +60,7 @@ export type FullLessonData = {
   bestAttempt: { score: number; passed: boolean } | null;
   lastWatchPosition: number;
   watchProgress: number;
-  lessonProgressMap: Record<number, string>;
+  lessonProgressMap: Record<number, LessonProgressStatus>;
   comments: RenderedComment[];
   canModerate: boolean;
   instructorName: string;

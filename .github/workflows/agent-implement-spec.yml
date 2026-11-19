@@ -6,7 +6,8 @@ name: Agent — Implement A Spec
 # Everything before this ran once, on one ticket, because a person put a label
 # on it. This one takes a *spec*, turns it into a queue of tickets, and then
 # works the queue on its own until there is nothing left in it — and if nobody
-# ever labels anything, a clock starts it anyway.
+# ever labels anything, a clock starts it anyway. (The clock is switched off
+# for now; see trigger 2 under `on:`.)
 #
 # There are two loops here, and they are different loops. Keep them apart in
 # your head while you read:
@@ -23,7 +24,7 @@ name: Agent — Implement A Spec
 #
 # THE SHAPE, AS A PICTURE
 #
-#   label / cron / self-dispatch
+#   label / cron (off for now) / self-dispatch
 #             │
 #             ▼
 #        ┌─────────┐   no queue yet    ┌───────────┐
@@ -103,10 +104,11 @@ on:
   issues:
     types: [labeled]
 
-  # 2. The clock. Every fifteen minutes it looks at the queue and moves it on
-  #    one ticket, whether or not anyone asked. This is the trigger that makes
-  #    the factory a thing that runs rather than a thing you run: the queue
-  #    drains overnight and you read pull requests in the morning.
+  # 2. The clock (DISABLED, see below). Every fifteen minutes it looks at the
+  #    queue and moves it on one ticket, whether or not anyone asked. This is
+  #    the trigger that makes the factory a thing that runs rather than a
+  #    thing you run: the queue drains overnight and you read pull requests
+  #    in the morning.
   #
   #    Two honest caveats, because they will bite you on the day:
   #      • GitHub schedules are best-effort. A `*/15` cron on a busy hour can
