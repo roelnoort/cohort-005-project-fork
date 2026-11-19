@@ -1,8 +1,8 @@
-import { db } from "~/db";
+import type { Db } from "./db";
 import { categories, courses, lessons, modules, users } from "~/db/schema";
 import { eq, or } from "drizzle-orm";
 
-export function getCourseWithDetails(id: number) {
+export function getCourseWithDetails(db: Db, id: number) {
   const course = db
     .select({
       id: courses.id,
@@ -31,10 +31,15 @@ export function getCourseWithDetails(id: number) {
 
   if (!course) return null;
 
+  return { ...course, modules: getModulesWithLessons(db, id) };
+}
+
+/** The course's modules in position order, each with its lessons in order. */
+function getModulesWithLessons(db: Db, courseId: number) {
   const courseModules = db
     .select()
     .from(modules)
-    .where(eq(modules.courseId, id))
+    .where(eq(modules.courseId, courseId))
     .orderBy(modules.position)
     .all();
 
@@ -50,24 +55,21 @@ export function getCourseWithDetails(id: number) {
           .all()
       : [];
 
-  return {
-    ...course,
-    modules: courseModules.map((mod) => ({
-      ...mod,
-      lessons: courseLessons.filter((l) => l.moduleId === mod.id),
-    })),
-  };
+  return courseModules.map((mod) => ({
+    ...mod,
+    lessons: courseLessons.filter((l) => l.moduleId === mod.id),
+  }));
 }
 
-export function getLessonById(id: number) {
+export function getLessonById(db: Db, id: number) {
   return db.select().from(lessons).where(eq(lessons.id, id)).get();
 }
 
-export function getModuleById(id: number) {
+export function getModuleById(db: Db, id: number) {
   return db.select().from(modules).where(eq(modules.id, id)).get();
 }
 
-export function getUserById(id: number) {
+export function getUserById(db: Db, id: number) {
   return db.select().from(users).where(eq(users.id, id)).get();
 }
 

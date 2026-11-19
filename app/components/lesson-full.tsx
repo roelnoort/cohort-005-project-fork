@@ -1,4 +1,4 @@
-import type { Route } from "../routes/+types/courses.$slug.lessons.$lessonId";
+import type { FullLessonData } from "~/components/lesson-view-data";
 import { LessonBreadcrumb } from "~/components/lesson-locked";
 import { CurriculumSidebar } from "~/components/lesson-curriculum-sidebar";
 import { QuizSection } from "~/components/lesson-quiz-section";
@@ -20,8 +20,6 @@ import {
 } from "lucide-react";
 import { formatDuration } from "~/lib/utils";
 import { YouTubePlayer } from "~/components/youtube-player";
-
-type LessonLoaderData = Route.ComponentProps["loaderData"];
 
 const AUTOPLAY_KEY = "cadence-autoplay";
 
@@ -51,11 +49,7 @@ function useAutoplay() {
   return [enabled, toggle] as const;
 }
 
-export function FullLesson({
-  data,
-}: {
-  data: Extract<LessonLoaderData, { view: "full" }>;
-}) {
+export function FullLesson({ data }: { data: FullLessonData }) {
   const {
     course,
     curriculum,

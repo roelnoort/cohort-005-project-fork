@@ -6,7 +6,8 @@ name: Agent — Implement A Spec
 # Everything before this ran once, on one ticket, because a person put a label
 # on it. This one takes a *spec*, turns it into a queue of tickets, and then
 # works the queue on its own until there is nothing left in it — and if nobody
-# ever labels anything, a clock starts it anyway.
+# ever labels anything, a clock starts it anyway. (The clock is switched off
+# for now; see trigger 2 under `on:`.)
 #
 # There are two loops here, and they are different loops. Keep them apart in
 # your head while you read:
@@ -23,7 +24,7 @@ name: Agent — Implement A Spec
 #
 # THE SHAPE, AS A PICTURE
 #
-#   label / cron / self-dispatch
+#   label / cron (off for now) / self-dispatch
 #             │
 #             ▼
 #        ┌─────────┐   no queue yet    ┌───────────┐
@@ -103,10 +104,11 @@ on:
   issues:
     types: [labeled]
 
-  # 2. The clock. Every fifteen minutes it looks at the queue and moves it on
-  #    one ticket, whether or not anyone asked. This is the trigger that makes
-  #    the factory a thing that runs rather than a thing you run: the queue
-  #    drains overnight and you read pull requests in the morning.
+  # 2. The clock (DISABLED, see below). Every fifteen minutes it looks at the
+  #    queue and moves it on one ticket, whether or not anyone asked. This is
+  #    the trigger that makes the factory a thing that runs rather than a
+  #    thing you run: the queue drains overnight and you read pull requests
+  #    in the morning.
   #
   #    Two honest caveats, because they will bite you on the day:
   #      • GitHub schedules are best-effort. A `*/15` cron on a busy hour can
@@ -114,8 +116,15 @@ on:
   #        there is. Do not stand in front of a camera waiting for :00.
   #      • GitHub disables scheduled workflows in a repository with no commits
   #        for sixty days, and emails the owner. A quiet repo stops on its own.
-  schedule:
-    - cron: "*/15 * * * *"
+  #
+  #    DISABLED FOR NOW: the cron fired every ~15 minutes even with no spec
+  #    labelled, filling the Actions tab with no-op runs. The queue now starts
+  #    only from the label or the button (and the chain re-dispatches itself).
+  #    The trade-off: if a run fails mid-queue, nothing picks it up again
+  #    until you dispatch it by hand. To restore the clock, uncomment the two
+  #    lines below.
+  # schedule:
+  #   - cron: "*/15 * * * *"
 
   # 3. The button, and the chain. `workflow_dispatch` is how a human starts it
   #    without labelling anything — and it is how the `chain` job at the bottom

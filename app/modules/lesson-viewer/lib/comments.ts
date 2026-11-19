@@ -1,6 +1,6 @@
 import { renderComment } from "~/lib/comment-markdown.server";
 import type { RenderedComment } from "~/components/comment-thread";
-import { db } from "~/db";
+import type { Db } from "./db";
 import {
   comments,
   courses,
@@ -30,7 +30,7 @@ export type ThreadComment = {
   replies: ThreadComment[];
 };
 
-function getCourseForLesson(lessonId: number) {
+function getCourseForLesson(db: Db, lessonId: number) {
   return db
     .select({
       courseId: courses.id,
@@ -45,15 +45,12 @@ function getCourseForLesson(lessonId: number) {
     .get();
 }
 
-export function getCommentById(commentId: number) {
+export function getCommentById(db: Db, commentId: number) {
   return db.select().from(comments).where(eq(comments.id, commentId)).get();
 }
 
-export function getLessonThread(lessonId: number): ThreadComment[] {
-  const course = getCourseForLesson(lessonId);
-  if (!course) return [];
-
-  const rows = db
+function getThreadRows(db: Db, lessonId: number) {
+  return db
     .select({
       id: comments.id,
       body: comments.body,
@@ -71,6 +68,13 @@ export function getLessonThread(lessonId: number): ThreadComment[] {
     .where(eq(comments.lessonId, lessonId))
     .orderBy(asc(comments.createdAt), asc(comments.id))
     .all();
+}
+
+export function getLessonThread(db: Db, lessonId: number): ThreadComment[] {
+  const course = getCourseForLesson(db, lessonId);
+  if (!course) return [];
+
+  const rows = getThreadRows(db, lessonId);
 
   const toThreadComment = (row: (typeof rows)[number]): ThreadComment => {
     const deleted = row.deletedAt !== null;
